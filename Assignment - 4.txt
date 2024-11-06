@@ -1,0 +1,179 @@
+Assignment - 4
+
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\dives\OneDrive\Desktop> mongosh
+Current Mongosh Log ID: 672ae7da51a1ee12ed0d818f
+Connecting to:          mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.3.3
+Using MongoDB:          8.0.3
+Using Mongosh:          2.3.3
+
+For mongosh info see: https://www.mongodb.com/docs/mongodb-shell/
+
+
+To help improve our products, anonymous usage data is collected and sent to MongoDB periodically (https://www.mongodb.com/legal/privacy-policy).
+You can opt-out by running the disableTelemetry() command.
+
+------
+   The server generated these startup warnings when booting
+   2024-11-05T09:40:10.964+05:30: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+------
+
+test> getDB(Students)
+ReferenceError: getDB is not defined
+test> conn = new Mongo();
+mongodb://localhost/?directConnection=true&serverSelectionTimeoutMS=2000
+test> db = conn.getDB("Students");
+Students
+Students> db.Students.insertOne({
+... name : "Divesh Gupta",
+... age : 20,
+... gender : "Male"
+... })
+{
+  acknowledged: true,
+  insertedId: ObjectId('672aea0051a1ee12ed0d8190')
+}
+Students> db.students.find({})
+
+Students> db.Students.find({})
+[
+  {
+    _id: ObjectId('672aea0051a1ee12ed0d8190'),
+    name: 'Divesh Gupta',
+    age: 20,
+    gender: 'Male'
+  }
+]
+Students> db.Students.find({age : 20})
+[
+  {
+    _id: ObjectId('672aea0051a1ee12ed0d8190'),
+    name: 'Divesh Gupta',
+    age: 20,
+    gender: 'Male'
+  }
+]
+Students> db.Students.insertOne({ name: "Kavyam Sachdeva", age: 20, gender: "Male" })
+{
+  acknowledged: true,
+  insertedId: ObjectId('672aeaec51a1ee12ed0d8191')
+}
+Students> db.Students.insertOne({ name: "Gagan Sharma", age: 20, gender: "Male" })
+{
+  acknowledged: true,
+  insertedId: ObjectId('672aeb0051a1ee12ed0d8192')
+}
+Students> db.Students.find({age })
+ReferenceError: age is not defined
+Students>
+
+Students> db.Students.find({age : 18})
+[
+  {
+    _id: ObjectId('672aeb0051a1ee12ed0d8192'),
+    name: 'Gagan Sharma',
+    age: 18,
+    gender: 'Male'
+  }
+]
+Students> db.Students.find({age > 18 && age < 23})
+Uncaught:
+SyntaxError: Unexpected token, expected "," (1:22)
+
+> 1 | db.Students.find({age > 18 && age < 23})
+    |                       ^
+  2 |
+
+Students> db.Students.find(age > 18 && age < 23)
+ReferenceError: age is not defined
+Students> db.Students.find({age : {&gt : 18, &lt : 23}})
+Uncaught:
+SyntaxError: Unexpected token (1:25)
+
+> 1 | db.Students.find({age : {&gt : 18, &lt : 23}})
+    |                          ^
+  2 |
+
+Students> db.Students.find({age : {$gt : 18, $lt : 23}})
+[
+  {
+    _id: ObjectId('672aea0051a1ee12ed0d8190'),
+    name: 'Divesh Gupta',
+    age: 20,
+    gender: 'Male'
+  },
+  {
+    _id: ObjectId('672aeaec51a1ee12ed0d8191'),
+    name: 'Kavyam Sachdeva',
+    age: 19,
+    gender: 'Male'
+  }
+]
+Students> db.Students.updateOne({name : "Divesh Gupta"}, [ {$set:{grade : "B" , modified : "$$NOW"}}])
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+Students> db.Students.deleteOne({name : "Gagan Sharma"})
+{ acknowledged: true, deletedCount: 1 }
+Students> db.Students.countDocuments({grade : "B"})
+1
+Students> db.Students.find({},{name : 1,age : 1})
+[
+  {
+    _id: ObjectId('672aea0051a1ee12ed0d8190'),
+    name: 'Divesh Gupta',
+    age: 20
+  },
+  {
+    _id: ObjectId('672aeaec51a1ee12ed0d8191'),
+    name: 'Kavyam Sachdeva',
+    age: 19
+  }
+]
+Students> db.Students.find({}).sort({age})
+ReferenceError: age is not defined
+Students> db.Students.find({}).sort({age : 1})
+[
+  {
+    _id: ObjectId('672aeaec51a1ee12ed0d8191'),
+    name: 'Kavyam Sachdeva',
+    age: 19,
+    gender: 'Male'
+  },
+  {
+    _id: ObjectId('672aea0051a1ee12ed0d8190'),
+    name: 'Divesh Gupta',
+    age: 20,
+    gender: 'Male',
+    grade: 'B',
+    modified: ISODate('2024-11-06T04:18:25.455Z')
+  }
+]
+Students> db.Students.find({}).sort({age : -1})
+[
+  {
+    _id: ObjectId('672aea0051a1ee12ed0d8190'),
+    name: 'Divesh Gupta',
+    age: 20,
+    gender: 'Male',
+    grade: 'B',
+    modified: ISODate('2024-11-06T04:18:25.455Z')
+  },
+  {
+    _id: ObjectId('672aeaec51a1ee12ed0d8191'),
+    name: 'Kavyam Sachdeva',
+    age: 19,
+    gender: 'Male'
+  }
+]
+Students>
+(To exit, press Ctrl+C again or Ctrl+D or type .exit)
+Students> exit()
