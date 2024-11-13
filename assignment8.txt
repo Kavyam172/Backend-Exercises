@@ -1,0 +1,183 @@
+Assignment - 8
+
+db.students.aggregate([
+  {
+    $lookup: {
+      from: "courses",
+      localField: "course_id",
+      foreignField: "_id",
+      as: "course_details"
+    }
+  },
+  { $unwind: "$course_details" },
+  {
+    $project: {
+      name: 1,
+      course_name: "$course_details.course_name"
+    }
+  }
+]);
+
+
+
+db.students.aggregate([
+  {
+    $match: {
+      score: { $gt: 75 }
+    }
+  }
+]);
+
+
+
+db.orders.aggregate([
+  {
+    $lookup: {
+      from: "customers",
+      localField: "customerId",
+      foreignField: "_id",
+      as: "customer_details"
+    }
+  },
+  { $unwind: "$customer_details" },
+  {
+    $match: {
+      amount: { $gt: 500 },
+      "customer_details.location": "New York"
+    }
+  }
+]);
+
+
+
+db.sales.aggregate([
+  {
+    $lookup: {
+      from: "products",
+      localField: "productId",
+      foreignField: "_id",
+      as: "product_details"
+    }
+  },
+  { $unwind: "$product_details" },
+  {
+    $match: {
+      "product_details.price": { $gt: 20 }
+    }
+  },
+  {
+    $group: {
+      _id: "$productId",
+      total_revenue: {
+        $sum: {
+          $multiply: ["$quantity", "$product_details.price"]
+        }
+      }
+    }
+  }
+]);
+
+
+
+db.employees.aggregate([
+  {
+    $match: {
+      department: { $in: ["HR", "Engineering", "Marketing"] }
+    }
+  }
+]);
+
+
+
+db.transactions.aggregate([
+  {
+    $match: {
+      $or: [
+        { type: "credit" },
+        { amount: { $gt: 1000 } }
+      ]
+    }
+  }
+]);
+
+
+
+db.orders.aggregate([
+  {
+    $lookup: {
+      from: "customers",
+      localField: "customerId",
+      foreignField: "_id",
+      as: "customer_details"
+    }
+  },
+  { $unwind: "$customer_details" },
+  {
+    $match: {
+      "customer_details.membership": { $ne: "premium" }
+    }
+  }
+]);
+
+
+
+db.students.aggregate([
+  {
+    $lookup: {
+      from: "courses",
+      localField: "courseId",
+      foreignField: "_id",
+      as: "course_details"
+    }
+  },
+  { $unwind: "$course_details" },
+  {
+    $lookup: {
+      from: "instructors",
+      localField: "course_details.instructorId",
+      foreignField: "_id",
+      as: "instructor_details"
+    }
+  },
+  { $unwind: "$instructor_details" },
+  {
+    $project: {
+      student_name: "$name",
+      course_name: "$course_details.course_name",
+      instructor_name: "$instructor_details.name"
+    }
+  }
+]);
+
+
+
+db.purchases.aggregate([
+  {
+    $lookup: {
+      from: "customers",
+      localField: "customerId",
+      foreignField: "_id",
+      as: "customer_details"
+    }
+  },
+  { $unwind: "$customer_details" },
+  {
+    $match: {
+      "customer_details.loyaltyPoints": { $gte: 1000 }
+    }
+  }
+]);
+
+
+
+db.products.aggregate([
+  {
+    $match: {
+      $and: [
+        { category: "electronics" },
+        { price: { $lt: 500 } },
+        { stock: { $gt: 10 } }
+      ]
+    }
+  }
+]);
