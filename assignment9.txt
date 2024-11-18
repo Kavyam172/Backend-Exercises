@@ -1,0 +1,35 @@
+Assignment - 9
+
+db.orders.aggregate([
+  {
+    $match: {
+      orderTotal: { $gt: 100 },
+      orderStatus: "shipped"
+    }
+  }
+]);
+
+
+db.sales.aggregate([
+  {
+    $group: {
+      _id: "$category",
+      totalQuantity: { $sum: "$quantity" }
+    }
+  },
+  {
+    $sort: { totalQuantity: -1 } // Optional: Sort categories by total quantity in descending order
+  }
+]);
+
+
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      localField: "userId",
+      foreignField: "userId",
+      as: "userOrders"
+    }
+  }
+]);
