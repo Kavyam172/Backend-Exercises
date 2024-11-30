@@ -1,0 +1,178 @@
+// Required Modules
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { Schema } = mongoose;
+
+const app = express();
+const PORT = 3000;
+const SECRET_KEY = 'your_secret_key';
+
+// Middleware
+app.use(express.json());
+
+// Database Connection
+mongoose.connect('mongodb://localhost:27017/task_management', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}).then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Database connection error:', err));
+
+// User Schema and Model
+const userSchema = new Schema({
+    username: { type: String, unique: true, required: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' }
+});
+
+const User = mongoose.model('User', userSchema);
+
+// Task Schema and Model
+const taskSchema = new Schema({
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    title: { type: String, required: true },
+    description: { type: String },
+    status: { type: String, enum: ['Pending', 'In Progress', 'Completed'], default: 'Pending' },
+    deleted: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Task = mongoose.model('Task', taskSchema);
+
+// Authentication Middleware
+const authenticate = (req, res, next) => {
+    const token = req.headers['authorization'];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+};
+
+// Routes
+
+// Signup
+app.post('/signup', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = await User.create({ username, password: hashedPassword });
+        res.status(201).json({ message: 'User registered successfully' });
+    } catch (err) {
+        res.status(400).json({ error: 'Username already exists' });
+    }
+});
+
+// Login
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const user = await User.findOne({ username });
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        const token = jwt.sign({ userId: user._id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
+        res.json({ token });
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Create Task
+app.post('/tasks', authenticate, async (req, res) => {
+    const { title, description } = req.body;
+    try {
+        const newTask = await Task.create({ userId: req.user.userId, title, description });
+        res.status(201).json(newTask);
+    } catch (err) {
+        res.status(400).json({ error: 'Failed to create task' });
+    }
+});
+
+// Get Tasks
+app.get('/tasks', authenticate, async (req, res) => {
+    const { page = 1, limit = 10, sortBy = 'createdAt', order = 'asc', search } = req.query;
+    const query = { userId: req.user.userId, deleted: false };
+    if (search) {
+        query.$or = [
+            { title: new RegExp(search, 'i') },
+            { description: new RegExp(search, 'i') }
+        ];
+    }
+
+    try {
+        const tasks = await Task.find(query)
+            .sort({ [sortBy]: order === 'asc' ? 1 : -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+        res.json(tasks);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
+});
+
+// Update Task
+app.put('/tasks/:id', authenticate, async (req, res) => {
+    const { id } = req.params;
+    const { title, description, status } = req.body;
+
+    try {
+        const task = await Task.findOne({ _id: id, userId: req.user.userId, deleted: false });
+        if (!task) return res.status(404).json({ error: 'Task not found' });
+
+        task.title = title || task.title;
+        task.description = description || task.description;
+        task.status = status || task.status;
+
+        await task.save();
+        res.json(task);
+    } catch (err) {
+        res.status(400).json({ error: 'Failed to update task' });
+    }
+});
+
+// Delete Task (Soft Delete)
+app.delete('/tasks/:id', authenticate, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const task = await Task.findOne({ _id: id, userId: req.user.userId, deleted: false });
+        if (!task) return res.status(404).json({ error: 'Task not found' });
+
+        task.deleted = true;
+        await task.save();
+        res.json({ message: 'Task deleted successfully' });
+    } catch (err) {
+        res.status(400).json({ error: 'Failed to delete task' });
+    }
+});
+
+// Admin: Get All Tasks
+app.get('/admin', authenticate, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    try {
+        const tasks = await Task.find();
+        res.json(tasks);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
+});
+
+// Centralized Error Handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Start Server
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
